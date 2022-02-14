@@ -121,6 +121,13 @@ class OrderAdmin(admin.ModelAdmin):
         'address'
     ]
 
+    search_fields = [
+        'first_name',
+        'last_name',
+        'phone',
+        'address'
+    ]
+
     fieldsets = (
         ('Заказчик', {
             'fields': [
