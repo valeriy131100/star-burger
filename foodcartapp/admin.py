@@ -118,7 +118,8 @@ class OrderAdmin(admin.ModelAdmin):
     list_display = [
         'full_name',
         'phonenumber',
-        'address'
+        'address',
+        'price'
     ]
 
     search_fields = [
@@ -137,6 +138,11 @@ class OrderAdmin(admin.ModelAdmin):
                 'phonenumber'
             ]
         }),
+        (None, {
+            'fields': [
+                'price'
+            ]
+        })
     )
 
     inlines = [OrderProductsInline]
