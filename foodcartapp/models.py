@@ -154,7 +154,7 @@ class Order(models.Model):
         return f'Заказ на {self.address}'
 
 
-class OrderProduct(models.Model):
+class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,

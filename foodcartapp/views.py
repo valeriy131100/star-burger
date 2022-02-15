@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import serializers
 
-from .models import Product, OrderProduct, Order
+from .models import Product, OrderItem, Order
 
 
 def banners_list_api(request):
@@ -60,15 +60,15 @@ def product_list_api(request):
     })
 
 
-class OrderProductSerializer(serializers.ModelSerializer):
+class OrderItemSerializer(serializers.ModelSerializer):
     class Meta:
-        model = OrderProduct
+        model = OrderItem
         fields = ('product', 'quantity')
 
 
 class OrderSerializer(serializers.ModelSerializer):
     products = serializers.ListField(
-        child=OrderProductSerializer(),
+        child=OrderItemSerializer(),
         allow_empty=False,
         write_only=True
     )
@@ -98,10 +98,10 @@ def register_order(request):
         address=data['address']
     )
 
-    order_products_fields = data['products']
-    OrderProduct.objects.bulk_create([
-        OrderProduct(order=order, **fields)
-        for fields in order_products_fields
+    order_items_fields = data['products']
+    OrderItem.objects.bulk_create([
+        OrderItem(order=order, **fields)
+        for fields in order_items_fields
     ])
 
     return Response(OrderSerializer(order).data)
