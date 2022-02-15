@@ -69,7 +69,8 @@ class OrderProductSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     products = serializers.ListField(
         child=OrderProductSerializer(),
-        allow_empty=False
+        allow_empty=False,
+        write_only=True
     )
 
     class Meta:
@@ -97,10 +98,10 @@ def register_order(request):
         address=data['address']
     )
 
-    order_products_fields = serializer.validated_data['products']
-    order_products = OrderProduct.objects.bulk_create([
+    order_products_fields = data['products']
+    OrderProduct.objects.bulk_create([
         OrderProduct(order=order, **fields)
         for fields in order_products_fields
     ])
 
-    return Response({})
+    return Response(OrderSerializer(order).data)
