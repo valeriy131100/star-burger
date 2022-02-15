@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-from rest_framework.serializers import ModelSerializer, Serializer
+from rest_framework.serializers import ModelSerializer, Serializer, IntegerField
 
 from foodcartapp.models import Product, Restaurant, Order
 
@@ -95,6 +95,8 @@ def view_restaurants(request):
 
 
 class OrderSerializer(ModelSerializer):
+    price = IntegerField()
+
     class Meta:
         model = Order
         fields = (
@@ -102,7 +104,8 @@ class OrderSerializer(ModelSerializer):
             'firstname',
             'lastname',
             'phonenumber',
-            'address'
+            'address',
+            'price'
         )
 
 
@@ -110,7 +113,7 @@ class OrderSerializer(ModelSerializer):
 def view_orders(request):
     return render(request, template_name='order_items.html', context={
         'orders': OrderSerializer(
-            Order.objects.all(),
+            Order.objects.annotate_prices(),
             many=True
         ).data
     })
