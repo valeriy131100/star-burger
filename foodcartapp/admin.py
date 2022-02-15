@@ -117,14 +117,14 @@ class OrderProductsInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = [
         'full_name',
-        'phone',
+        'phonenumber',
         'address'
     ]
 
     search_fields = [
-        'first_name',
-        'last_name',
-        'phone',
+        'firstname',
+        'lastname',
+        'phonenumber',
         'address'
     ]
 
@@ -132,8 +132,8 @@ class OrderAdmin(admin.ModelAdmin):
         ('Заказчик', {
             'fields': [
                 'address',
-                'first_name',
-                'last_name',
+                'firstname',
+                'lastname',
                 'phone'
             ]
         }),
@@ -142,5 +142,5 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderProductsInline]
 
     def full_name(self, obj):
-        return f'{obj.first_name} {obj.last_name}'
+        return f'{obj.firstname} {obj.lastname}'
     full_name.short_description = 'имя'

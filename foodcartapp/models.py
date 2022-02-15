@@ -130,18 +130,18 @@ class Order(models.Model):
         verbose_name='адрес'
     )
 
-    first_name = models.CharField(
+    firstname = models.CharField(
         max_length=100,
         verbose_name='имя',
         db_index=True
     )
 
-    last_name = models.CharField(
+    lastname = models.CharField(
         max_length=100,
         verbose_name='фамилия',
         db_index=True
     )
-    phone = PhoneNumberField(
+    phonenumber = PhoneNumberField(
         verbose_name='телефон',
         db_index=True
     )

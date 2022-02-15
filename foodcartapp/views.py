@@ -3,7 +3,7 @@ from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import serializers
 
 from .models import Product, OrderProduct, Order
 
@@ -60,131 +60,47 @@ def product_list_api(request):
     })
 
 
-def validate_keys(data: dict, keys: list, error_message_begin=''):
-    validate_data = {
-        key: data.get(key) for key in keys
-    }
+class OrderProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderProduct
+        fields = ('product', 'quantity')
 
-    errored_keys = []
 
-    for key, value in validate_data.items():
-        if value is None or value == "":
-            errored_keys.append(key)
+class OrderSerializer(serializers.ModelSerializer):
+    products = serializers.ListField(
+        child=OrderProductSerializer(),
+        allow_empty=False
+    )
 
-    if errored_keys:
-        return {
-            'error': f'{error_message_begin}{", ".join(errored_keys)}: '
-                     f'not presented or null or ""'
-        }
+    class Meta:
+        model = Order
+        fields = (
+            'firstname',
+            'lastname',
+            'phonenumber',
+            'address',
+            'products'
+        )
 
 
 @api_view(['POST'])
 def register_order(request):
-    data = request.data
+    serializer = OrderSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
-    validate_error = validate_keys(
-        data, ['firstname', 'lastname', 'phonenumber', 'address', 'products']
-    )
+    data = serializer.validated_data
 
-    if validate_error is not None:
-        return Response(
-            validate_error,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    bad_phone = False
-
-    try:
-        parsed_phone = phonenumbers.parse(
-            data['phonenumber'],
-            'RU'
-        )
-    except phonenumbers.NumberParseException:
-        bad_phone = True
-    else:
-        if phonenumbers.is_valid_number(parsed_phone):
-            data['phonenumber'] = parsed_phone
-        else:
-            bad_phone = True
-
-    if bad_phone:
-        return Response(
-            {'error': f'phonenumber: is not a phone number'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    order = Order(
-        first_name=data['firstname'],
-        last_name=data['lastname'],
-        phone=data['phonenumber'],
+    order = Order.objects.create(
+        firstname=data['firstname'],
+        lastname=data['lastname'],
+        phonenumber=data['phonenumber'],
         address=data['address']
     )
 
-    products = data['products']
-
-    if not isinstance(products, list):
-        return Response(
-            {'error': f'products: expected a list, got a {type(products)}'}
-        )
-
-    if not products:
-        return Response(
-            {'error': f'products: does not contain any value'}
-        )
-
-    order_products = []
-
-    for num, order_item in enumerate(products):
-        error_message_begin = f'products[{num}]: '
-
-        validate_error = validate_keys(
-            order_item,
-            ['product', 'quantity'],
-            error_message_begin=error_message_begin
-        )
-
-        if validate_error is not None:
-            return Response(
-                validate_error,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        product_id = order_item['product']
-        if not isinstance(product_id, int):
-            return Response(
-                {'error': f'{error_message_begin}product: '
-                          f'expected a int, got a {type(products)}'}
-            )
-        try:
-            product = Product.objects.get(pk=product_id)
-        except Product.DoesNotExist:
-            return Response(
-                {'error': f'{error_message_begin}product: '
-                          f'{product_id} is not a valid product'}
-            )
-
-        quantity = order_item['quantity']
-        if not isinstance(quantity, int):
-            return Response(
-                {'error': f'{error_message_begin}quantity: '
-                          f'expected a int, got a {type(products)}'}
-            )
-        if quantity < 1:
-            return Response(
-                {'error': f'{error_message_begin}quantity: '
-                          f'{quantity} is not a valid quantity'}
-            )
-
-        order_product = OrderProduct(
-            order=order,
-            product=product,
-            quantity=quantity
-        )
-
-        order_products.append(order_product)
-
-    order.save()
-    for order_product in order_products:
-        order_product.save()
+    order_products_fields = serializer.validated_data['products']
+    order_products = OrderProduct.objects.bulk_create([
+        OrderProduct(order=order, **fields)
+        for fields in order_products_fields
+    ])
 
     return Response({})
