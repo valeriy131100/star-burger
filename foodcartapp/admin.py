@@ -134,7 +134,7 @@ class OrderAdmin(admin.ModelAdmin):
                 'address',
                 'firstname',
                 'lastname',
-                'phone'
+                'phonenumber'
             ]
         }),
     )
