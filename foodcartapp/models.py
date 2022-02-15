@@ -141,7 +141,8 @@ class OrderQuerySet(models.QuerySet):
 class Order(models.Model):
     address = models.CharField(
         max_length=200,
-        verbose_name='адрес'
+        verbose_name='адрес',
+        db_index=True
     )
 
     firstname = models.CharField(
