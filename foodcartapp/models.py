@@ -179,4 +179,4 @@ class OrderItem(models.Model):
         )
 
     def __str__(self):
-        return f'{self.product} в заказе {self.order.id}'
+        return f'{self.product} ({self.quantity} шт.) в заказе {self.order.id}'
