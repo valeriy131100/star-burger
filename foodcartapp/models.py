@@ -126,6 +126,10 @@ class RestaurantMenuItem(models.Model):
 
 
 class Order(models.Model):
+    FINISHED_STATUS = (
+        'completed', 'rejected', 'failed'
+    )
+
     address = models.CharField(
         max_length=200,
         verbose_name='адрес',

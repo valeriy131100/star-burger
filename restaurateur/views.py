@@ -113,9 +113,13 @@ class OrderSerializer(ModelSerializer):
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
+    unfinished_orders = Order.objects.exclude(
+        status__in=Order.FINISHED_STATUS
+    )
+
     return render(request, template_name='order_items.html', context={
         'orders': OrderSerializer(
-            Order.objects.all(),
+            unfinished_orders,
             many=True
         ).data
     })
