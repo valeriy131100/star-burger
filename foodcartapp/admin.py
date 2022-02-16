@@ -122,14 +122,19 @@ class OrderAdmin(admin.ModelAdmin):
         'full_name',
         'phonenumber',
         'address',
-        'price'
+        'price',
+        'status'
     ]
 
     search_fields = [
         'firstname',
         'lastname',
         'phonenumber',
-        'address'
+        'address',
+    ]
+
+    list_filter = [
+        'status'
     ]
 
     fieldsets = (
@@ -143,7 +148,8 @@ class OrderAdmin(admin.ModelAdmin):
         }),
         (None, {
             'fields': [
-                'price'
+                'price',
+                'status'
             ]
         })
     )

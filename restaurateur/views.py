@@ -5,7 +5,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, CharField
 
 from foodcartapp.models import Product, Restaurant, Order
 
@@ -95,6 +95,8 @@ def view_restaurants(request):
 
 
 class OrderSerializer(ModelSerializer):
+    status = CharField(source='get_status_display')
+
     class Meta:
         model = Order
         fields = (
@@ -103,7 +105,8 @@ class OrderSerializer(ModelSerializer):
             'lastname',
             'phonenumber',
             'address',
-            'price'
+            'price',
+            'status'
         )
 
 

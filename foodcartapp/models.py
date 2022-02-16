@@ -156,6 +156,21 @@ class Order(models.Model):
         validators=[MinValueValidator(0)]
     )
 
+    status = models.CharField(
+        max_length=50,
+        verbose_name='статус',
+        db_index=True,
+        choices=(
+            ('unperformed', 'Необработанный'),
+            ('in work', 'В работе'),
+            ('delivery', 'Доставляется'),
+            ('completed', 'Выполнен'),
+            ('rejected', 'Отменен'),
+            ('failed', 'Завершен неудачно')
+        ),
+        default='unperformed'
+    )
+
     class Meta:
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
