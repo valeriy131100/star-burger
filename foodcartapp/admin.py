@@ -161,6 +161,7 @@ class OrderAdmin(admin.ModelAdmin):
         (None, {
             'fields': [
                 'price',
+                'pay_by',
                 'status',
                 'comment'
             ]

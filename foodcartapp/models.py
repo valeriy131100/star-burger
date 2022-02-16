@@ -200,6 +200,17 @@ class Order(models.Model):
         null=True
     )
 
+    pay_by = models.CharField(
+        max_length=50,
+        verbose_name='способ оплаты',
+        choices=(
+            ('cash', 'Наличностью'),
+            ('card', 'Электронно'),
+            ('not chose', 'Не выбран')
+        ),
+        default='not chose'
+    )
+
     class Meta:
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
