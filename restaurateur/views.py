@@ -106,7 +106,8 @@ class OrderSerializer(ModelSerializer):
             'phonenumber',
             'address',
             'price',
-            'status'
+            'status',
+            'comment'
         )
 
 

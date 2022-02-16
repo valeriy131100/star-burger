@@ -123,7 +123,8 @@ class OrderAdmin(admin.ModelAdmin):
         'phonenumber',
         'address',
         'price',
-        'status'
+        'status',
+        'comment'
     ]
 
     search_fields = [
@@ -131,6 +132,8 @@ class OrderAdmin(admin.ModelAdmin):
         'lastname',
         'phonenumber',
         'address',
+        'price',
+        'comment'
     ]
 
     list_filter = [
@@ -149,7 +152,8 @@ class OrderAdmin(admin.ModelAdmin):
         (None, {
             'fields': [
                 'price',
-                'status'
+                'status',
+                'comment'
             ]
         })
     )
