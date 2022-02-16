@@ -210,7 +210,8 @@ class Order(models.Model):
             ('card', 'Электронно'),
             ('not chose', 'Не выбран')
         ),
-        default='not chose'
+        default='not chose',
+        db_index=True
     )
 
     class Meta:
