@@ -31,7 +31,7 @@
         <td>{{ order.address  }}</td>
         <td>{{ order.price }}</td>
         <td>
-          <a href="{% url "admin:foodcartapp_order_change" object_id=order.id %}">
+          <a href="{% url "admin:foodcartapp_order_change" object_id=order.id %}?next={{ request.get_full_path|urlencode }}">
             Ссылка на админку
           </a>
         </td>
