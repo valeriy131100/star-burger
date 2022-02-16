@@ -96,6 +96,7 @@ def view_restaurants(request):
 
 class OrderSerializer(ModelSerializer):
     status = CharField(source='get_status_display')
+    pay_by = CharField(source='get_pay_by_display')
 
     class Meta:
         model = Order
@@ -107,7 +108,8 @@ class OrderSerializer(ModelSerializer):
             'address',
             'price',
             'status',
-            'comment'
+            'comment',
+            'pay_by'
         )
 
 
