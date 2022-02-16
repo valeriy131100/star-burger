@@ -191,13 +191,15 @@ class Order(models.Model):
     called_at = models.DateTimeField(
         verbose_name='когда сделан звонок',
         db_index=True,
-        null=True
+        null=True,
+        blank=True
     )
 
     delivered_at = models.DateTimeField(
         verbose_name='когда доставлен',
         db_index=True,
-        null=True
+        null=True,
+        blank=True
     )
 
     pay_by = models.CharField(
