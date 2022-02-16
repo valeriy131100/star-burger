@@ -162,6 +162,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': [
                 'price',
                 'pay_by',
+                'restaurant',
                 'status',
                 'comment'
             ]

@@ -1,6 +1,5 @@
 from django.db import models
 from django.core.validators import MinValueValidator
-from django.db.models import F, Sum
 from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -212,6 +211,15 @@ class Order(models.Model):
         ),
         default='not chose',
         db_index=True
+    )
+
+    restaurant = models.ForeignKey(
+        Restaurant,
+        verbose_name='ресторан',
+        related_name='orders',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
     )
 
     class Meta:

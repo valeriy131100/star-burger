@@ -1,11 +1,15 @@
+from itertools import groupby
+from operator import itemgetter
+
 from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework import serializers
 
-from .models import Product, OrderItem, Order
+from .models import Product, OrderItem, Order, RestaurantMenuItem
 
 
 def banners_list_api(request):
@@ -101,12 +105,42 @@ def register_order(request):
         ]
     )
 
+    products_ids = [fields['product'].id for fields in order_items_fields]
+
+    restaurant_with_products = [
+        (order_id, [value['product_id'] for value in values])
+        for order_id, values in
+        groupby(
+            (RestaurantMenuItem.objects.values('restaurant_id', 'product_id')
+             .order_by('restaurant_id')
+             .filter(availability=True)),
+            key=itemgetter('restaurant_id')
+        )
+    ]
+
+    selected_restaurant = None
+
+    for restaurant_id, menu_products in restaurant_with_products:
+        for order_product in products_ids:
+            if order_product in menu_products:
+                continue
+            break
+        else:
+            selected_restaurant = restaurant_id
+            break
+
+    if selected_restaurant is None:
+        raise NotFound(
+            {'error': 'products: can\'t find restaurant for this order'},
+        )
+
     order = Order.objects.create(
         firstname=data['firstname'],
         lastname=data['lastname'],
         phonenumber=data['phonenumber'],
         address=data['address'],
-        price=order_price
+        price=order_price,
+        restaurant_id=selected_restaurant
     )
 
     OrderItem.objects.bulk_create([
