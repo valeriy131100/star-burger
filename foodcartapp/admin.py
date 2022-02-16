@@ -124,7 +124,8 @@ class OrderAdmin(admin.ModelAdmin):
         'address',
         'price',
         'status',
-        'comment'
+        'comment',
+        'registered_at'
     ]
 
     search_fields = [
@@ -137,7 +138,8 @@ class OrderAdmin(admin.ModelAdmin):
     ]
 
     list_filter = [
-        'status'
+        'status',
+        'registered_at'
     ]
 
     fieldsets = (
@@ -148,6 +150,13 @@ class OrderAdmin(admin.ModelAdmin):
                 'lastname',
                 'phonenumber'
             ]
+        }),
+        ('Временные точки', {
+           'fields': [
+               'registered_at',
+               'called_at',
+               'delivered_at'
+           ]
         }),
         (None, {
             'fields': [
