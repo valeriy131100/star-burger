@@ -194,6 +194,7 @@ def view_orders(request):
                               .prefetch_related('products'))
 
     menu_items = (RestaurantMenuItem.objects
+                                    .filter(availability=True)
                                     .select_related('restaurant')
                                     .order_by('restaurant_id'))
 
