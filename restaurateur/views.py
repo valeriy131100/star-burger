@@ -1,13 +1,19 @@
+from itertools import groupby
+from operator import attrgetter
+
+import geopy.distance
+import requests
 from django import forms
+from django.conf import settings
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
-from rest_framework.serializers import ModelSerializer, CharField
+from rest_framework import serializers
 
-from foodcartapp.models import Product, Restaurant, Order
+from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 
 
 class Login(forms.Form):
@@ -94,9 +100,67 @@ def view_restaurants(request):
     })
 
 
-class OrderSerializer(ModelSerializer):
-    status = CharField(source='get_status_display')
-    pay_by = CharField(source='get_pay_by_display')
+def fetch_coordinates(apikey, address):
+    base_url = "https://geocode-maps.yandex.ru/1.x"
+    response = requests.get(base_url, params={
+        "geocode": address,
+        "apikey": apikey,
+        "format": "json",
+    })
+    response.raise_for_status()
+    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
+
+    if not found_places:
+        return None
+
+    most_relevant = found_places[0]
+    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
+    return lon, lat
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(source='get_status_display')
+    pay_by = serializers.CharField(source='get_pay_by_display')
+    restaurants = serializers.SerializerMethodField()
+
+    def get_restaurants(self, order: Order):
+        address = order.address
+        api_key = settings.YANDEX_GEOCODER_API_KEY
+        order_coordinates = fetch_coordinates(
+            api_key, address
+        )
+
+        menu_items = self.context.get('menu_items')
+
+        products_ids = [order_item.product_id for order_item in order.products.all()]
+
+        grouped_menu_items = groupby(
+            menu_items,
+            attrgetter('restaurant')
+        )
+
+        selected_restaurants = []
+
+        for restaurant, menu_items in grouped_menu_items:
+            menu_products = [menu_item.product_id for menu_item in menu_items]
+            if all(products_ids) in menu_products:
+                selected_restaurants.append(restaurant)
+
+        formatted_restaurants = []
+
+        for restaurant in selected_restaurants:
+            restaurant_coordinates = fetch_coordinates(
+                api_key, restaurant.address
+            )
+            restaurant_distance = geopy.distance.distance(
+                restaurant_coordinates[::-1], order_coordinates[::-1]
+            )
+
+            formatted_restaurants.append(
+                f'{restaurant.name} {round(restaurant_distance.km, 2)}км'
+            )
+
+        return '\n'.join(formatted_restaurants)
 
     class Meta:
         model = Order
@@ -109,19 +173,25 @@ class OrderSerializer(ModelSerializer):
             'price',
             'status',
             'comment',
-            'pay_by'
+            'pay_by',
+            'restaurants'
         )
 
 
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
-    unfinished_orders = Order.objects.exclude(
-        status__in=Order.FINISHED_STATUS
-    )
+    unfinished_orders = (Order.objects
+                              .exclude(status__in=Order.FINISHED_STATUS)
+                              .prefetch_related('products'))
 
     return render(request, template_name='order_items.html', context={
         'orders': OrderSerializer(
             unfinished_orders,
-            many=True
+            many=True,
+            context={
+                'menu_items': RestaurantMenuItem.objects
+                                                .select_related('restaurant')
+                                                .order_by('restaurant_id')
+            }
         ).data
     })
