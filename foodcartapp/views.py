@@ -5,11 +5,10 @@ from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
 from rest_framework.decorators import api_view
-from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework import serializers
 
-from .models import Product, OrderItem, Order, RestaurantMenuItem
+from .models import Product, OrderItem, Order
 
 
 def banners_list_api(request):
