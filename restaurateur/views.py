@@ -169,7 +169,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 f'{restaurant.name}: {round(restaurant_distance.km, 2)}км'
             )
 
-        return '\n'.join(formatted_restaurants)
+        return formatted_restaurants
 
     class Meta:
         model = Order

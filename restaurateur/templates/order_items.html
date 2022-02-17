@@ -40,7 +40,10 @@
         <td>
           <details>
             <summary>Нажмите, чтобы показать</summary>
-            {{ order.restaurants }}
+            {% for restaurant in order.restaurants %}
+              {{ restaurant }}
+              <br>
+            {% endfor %}
           </details>
         </td>
         <td>
