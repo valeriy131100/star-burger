@@ -108,16 +108,19 @@ class OrderSerializer(serializers.ModelSerializer):
         addresses = self.context.get('addresses')
 
         order_coordinates = addresses.get(order.address)
+
         if order_coordinates is None:
+            order_address = Address.objects.create(
+                address=order.address
+            )
             try:
-                order_address = Address.objects.create(
-                    address=order.address
-                )
                 order_address.update_coordinates()
             except ValueError:
-                return 'Невозможный адрес заказа'
+                # handle null coordinates later
+                pass
 
             order_coordinates = order_address.coordinates
+            addresses[order.address] = order_coordinates
 
         if order_coordinates == Address.NULL_COORDINATES:
             return 'Невозможный адрес заказа'
@@ -140,17 +143,16 @@ class OrderSerializer(serializers.ModelSerializer):
         for restaurant in selected_restaurants:
             restaurant_coordinates = addresses.get(restaurant.address)
             if not restaurant_coordinates:
+                restaurant_address = Address.objects.create(
+                    address=restaurant.address
+                )
                 try:
-                    restaurant_address = Address.objects.create(
-                        address=restaurant.address
-                    )
                     restaurant_address.update_coordinates()
                 except ValueError:
-                    formatted_restaurants.append(
-                        f'{restaurant.name}: Невозможный адрес'
-                    )
-                    continue
+                    # handle null coordinates later
+                    pass
                 restaurant_coordinates = restaurant_address.coordinates
+                addresses[restaurant.address] = restaurant_coordinates
 
             if restaurant_coordinates == Address.NULL_COORDINATES:
                 formatted_restaurants.append(
@@ -206,10 +208,8 @@ def view_orders(request):
     restaurants_addresses = [restaurant.address for restaurant in restaurants]
     orders_addresses = [order.address for order in unfinished_orders]
 
-    addresses = (
-        Address.objects
-               .exclude(longitude__isnull=True, latitude__isnull=True)
-               .filter(address__in=restaurants_addresses + orders_addresses)
+    addresses = Address.objects.filter(
+        address__in=restaurants_addresses + orders_addresses
     )
 
     context_addresses = {
