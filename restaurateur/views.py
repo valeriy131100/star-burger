@@ -2,7 +2,6 @@ from itertools import groupby
 from operator import attrgetter
 
 import geopy.distance
-import requests
 from django import forms
 from django.conf import settings
 from django.shortcuts import redirect, render
@@ -13,6 +12,7 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 from rest_framework import serializers
 
+from addresses.models import Address
 from foodcartapp.models import Product, Restaurant, Order, RestaurantMenuItem
 
 
@@ -76,7 +76,6 @@ def view_products(request):
     default_availability = {restaurant.id: False for restaurant in restaurants}
     products_with_restaurants = []
     for product in products:
-
         availability = {
             **default_availability,
             **{item.restaurant_id: item.availability for item in product.menu_items.all()},
@@ -100,44 +99,34 @@ def view_restaurants(request):
     })
 
 
-def fetch_coordinates(apikey, address):
-    base_url = "https://geocode-maps.yandex.ru/1.x"
-    response = requests.get(base_url, params={
-        "geocode": address,
-        "apikey": apikey,
-        "format": "json",
-    })
-    response.raise_for_status()
-    found_places = response.json()['response']['GeoObjectCollection']['featureMember']
-
-    if not found_places:
-        return None
-
-    most_relevant = found_places[0]
-    lon, lat = most_relevant['GeoObject']['Point']['pos'].split(" ")
-    return lon, lat
-
-
 class OrderSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source='get_status_display')
     pay_by = serializers.CharField(source='get_pay_by_display')
     restaurants = serializers.SerializerMethodField()
 
     def get_restaurants(self, order: Order):
-        address = order.address
-        api_key = settings.YANDEX_GEOCODER_API_KEY
-        order_coordinates = fetch_coordinates(
-            api_key, address
-        )
+        addresses = self.context.get('addresses')
 
-        menu_items = self.context.get('menu_items')
+        order_coordinates = addresses.get(order.address)
+        if order_coordinates is None:
+            try:
+                order_address = Address.objects.create(
+                    address=order.address
+                )
+                order_address.update_coordinates()
+            except ValueError:
+                return 'Невозможный адрес заказа'
 
-        products_ids = [order_item.product_id for order_item in order.products.all()]
+            order_coordinates = order_address.coordinates
 
-        grouped_menu_items = groupby(
-            menu_items,
-            attrgetter('restaurant')
-        )
+        if order_coordinates == Address.NULL_COORDINATES:
+            return 'Невозможный адрес заказа'
+
+        products_ids = [
+            order_item.product_id for order_item in order.products.all()
+        ]
+
+        grouped_menu_items = self.context.get('grouped_menu_items')
 
         selected_restaurants = []
 
@@ -149,15 +138,33 @@ class OrderSerializer(serializers.ModelSerializer):
         formatted_restaurants = []
 
         for restaurant in selected_restaurants:
-            restaurant_coordinates = fetch_coordinates(
-                api_key, restaurant.address
-            )
+            restaurant_coordinates = addresses.get(restaurant.address)
+            if not restaurant_coordinates:
+                try:
+                    restaurant_address = Address.objects.create(
+                        address=restaurant.address
+                    )
+                    restaurant_address.update_coordinates()
+                except ValueError:
+                    formatted_restaurants.append(
+                        f'{restaurant.name}: Невозможный адрес'
+                    )
+                    continue
+                restaurant_coordinates = restaurant_address.coordinates
+
+            if restaurant_coordinates == Address.NULL_COORDINATES:
+                formatted_restaurants.append(
+                    f'{restaurant.name}: Невозможный адрес'
+                )
+                continue
+
             restaurant_distance = geopy.distance.distance(
-                restaurant_coordinates[::-1], order_coordinates[::-1]
+                restaurant_coordinates,
+                order_coordinates
             )
 
             formatted_restaurants.append(
-                f'{restaurant.name} {round(restaurant_distance.km, 2)}км'
+                f'{restaurant.name}: {round(restaurant_distance.km, 2)}км'
             )
 
         return '\n'.join(formatted_restaurants)
@@ -184,14 +191,38 @@ def view_orders(request):
                               .exclude(status__in=Order.FINISHED_STATUS)
                               .prefetch_related('products'))
 
+    menu_items = (RestaurantMenuItem.objects
+                                    .select_related('restaurant')
+                                    .order_by('restaurant_id'))
+
+    grouped_menu_items = {
+        restaurant: list(menu_items)
+        for restaurant, menu_items in
+        groupby(menu_items, attrgetter('restaurant'))
+    }.items()
+
+    restaurants = list(set([menu_item.restaurant for menu_item in menu_items]))
+
+    restaurants_addresses = [restaurant.address for restaurant in restaurants]
+    orders_addresses = [order.address for order in unfinished_orders]
+
+    addresses = (
+        Address.objects
+               .exclude(longitude__isnull=True, latitude__isnull=True)
+               .filter(address__in=restaurants_addresses + orders_addresses)
+    )
+
+    context_addresses = {
+        address.address: address.coordinates for address in addresses
+    }
+
     return render(request, template_name='order_items.html', context={
         'orders': OrderSerializer(
             unfinished_orders,
             many=True,
             context={
-                'menu_items': RestaurantMenuItem.objects
-                                                .select_related('restaurant')
-                                                .order_by('restaurant_id')
+                'grouped_menu_items': grouped_menu_items,
+                'addresses': context_addresses
             }
         ).data
     })
