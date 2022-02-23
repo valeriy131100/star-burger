@@ -111,7 +111,7 @@ class OrderSerializer(serializers.ModelSerializer):
         order_coordinates = addresses.get(order.address)
 
         if order_coordinates == Address.NULL_COORDINATES:
-            return 'Невозможный адрес заказа'
+            return ['Невозможный адрес заказа']
 
         products_ids = [
             order_item.product_id for order_item in order.items.all()
