@@ -184,15 +184,13 @@ def view_orders(request):
         existed_address.address for existed_address in existed_addresses
     ]
 
-    addresses_to_create = [
-        Address(address=address)
-        for address in (restaurants_addresses + orders_addresses)
+    new_addresses = [
+        Address.objects.create(address=address)
+        for address in set(restaurants_addresses + orders_addresses)
         if address not in not_to_create
     ]
 
-    created_addresses = Address.objects.bulk_create(addresses_to_create)
-
-    for address in created_addresses:
+    for address in new_addresses:
         try:
             address.update_coordinates()
         except ValueError:
@@ -200,7 +198,7 @@ def view_orders(request):
 
     context_addresses = {
         address.address: address.coordinates
-        for address in list(existed_addresses) + list(created_addresses)
+        for address in list(existed_addresses) + new_addresses
     }
 
     return render(request, template_name='order_items.html', context={
