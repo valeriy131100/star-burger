@@ -1,6 +1,3 @@
-from itertools import groupby
-from operator import itemgetter
-
 from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
