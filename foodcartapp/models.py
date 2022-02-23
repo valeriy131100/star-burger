@@ -244,11 +244,12 @@ class Order(models.Model):
         return f'Заказ на {self.address}'
 
     def calculate_price(self):
-        return self.items.aggregate(
-            price=Sum(
-                F('price_at_order') * F('quantity')
-            )
-        ).get('price', 0)
+        return sum(
+            [
+                order_item.price_at_order * order_item.quantity
+                for order_item in self.items.all()
+            ]
+        )
 
     calculate_price.short_description = 'цена'
 
