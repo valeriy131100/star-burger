@@ -207,9 +207,9 @@ class Order(models.Model):
         choices=(
             ('cash', 'Наличностью'),
             ('card', 'Электронно'),
-            ('not chose', 'Не выбран')
+            ('not chosen', 'Не выбран')
         ),
-        default='not chose',
+        default='not chosen',
         db_index=True
     )
 
