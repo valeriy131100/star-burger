@@ -97,19 +97,14 @@ def register_order(request):
 
     order_items_fields = data['products']
 
-    order_price = sum(
-        [
-            fields['product'].price * fields['quantity']
-            for fields in order_items_fields
-        ]
-    )
+    for fields in order_items_fields:
+        fields['price_at_order'] = fields['product'].price * fields['quantity']
 
     order = Order.objects.create(
         firstname=data['firstname'],
         lastname=data['lastname'],
         phonenumber=data['phonenumber'],
-        address=data['address'],
-        price=order_price,
+        address=data['address']
     )
 
     OrderItem.objects.bulk_create([

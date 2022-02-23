@@ -102,6 +102,11 @@ def view_restaurants(request):
 class OrderSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source='get_status_display')
     pay_by = serializers.CharField(source='get_pay_by_display')
+    price = serializers.DecimalField(
+        source='calculate_price',
+        max_digits=8,
+        decimal_places=2,
+    )
     restaurants = serializers.SerializerMethodField()
 
     def get_restaurants(self, order: Order):
@@ -126,7 +131,7 @@ class OrderSerializer(serializers.ModelSerializer):
             return 'Невозможный адрес заказа'
 
         products_ids = [
-            order_item.product_id for order_item in order.products.all()
+            order_item.product_id for order_item in order.items.all()
         ]
 
         grouped_menu_items = self.context.get('grouped_menu_items')
@@ -191,7 +196,7 @@ class OrderSerializer(serializers.ModelSerializer):
 def view_orders(request):
     unfinished_orders = (Order.objects
                               .exclude(status__in=Order.FINISHED_STATUS)
-                              .prefetch_related('products'))
+                              .prefetch_related('items'))
 
     menu_items = (RestaurantMenuItem.objects
                                     .filter(availability=True)

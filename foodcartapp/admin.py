@@ -122,7 +122,6 @@ class OrderAdmin(admin.ModelAdmin):
         'full_name',
         'phonenumber',
         'address',
-        'price',
         'status',
         'comment',
         'registered_at'
@@ -133,7 +132,6 @@ class OrderAdmin(admin.ModelAdmin):
         'lastname',
         'phonenumber',
         'address',
-        'price',
         'comment'
     ]
 
@@ -160,7 +158,7 @@ class OrderAdmin(admin.ModelAdmin):
         }),
         (None, {
             'fields': [
-                'price',
+                'calculate_price',
                 'pay_by',
                 'restaurant',
                 'status',
@@ -168,6 +166,7 @@ class OrderAdmin(admin.ModelAdmin):
             ]
         })
     )
+    readonly_fields = ('calculate_price',)
 
     inlines = [OrderProductsInline]
 

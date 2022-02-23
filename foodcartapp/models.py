@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.db.models import Sum, F
 from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -152,14 +153,6 @@ class Order(models.Model):
         db_index=True
     )
 
-    price = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name='цена',
-        db_index=True,
-        validators=[MinValueValidator(0)]
-    )
-
     status = models.CharField(
         max_length=50,
         verbose_name='статус',
@@ -230,6 +223,15 @@ class Order(models.Model):
     def __str__(self):
         return f'Заказ на {self.address}'
 
+    def calculate_price(self):
+        return self.items.aggregate(
+            price=Sum(
+                F('price_at_order') * F('quantity')
+            )
+        ).get('price', 0)
+
+    calculate_price.short_description = 'цена'
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(
@@ -243,6 +245,12 @@ class OrderItem(models.Model):
         on_delete=models.CASCADE,
         related_name='orders_items',
         verbose_name='продукт'
+    )
+    price_at_order = models.DecimalField(
+        'цена',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
     )
     quantity = models.IntegerField(
         verbose_name='количество',
