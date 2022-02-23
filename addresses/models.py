@@ -31,7 +31,7 @@ class Address(models.Model):
         default=None
     )
 
-    def update_coordinates(self):
+    def update_coordinates(self, save=True):
         address = self.address
 
         api_key = settings.YANDEX_GEOCODER_API_KEY
@@ -57,7 +57,8 @@ class Address(models.Model):
 
         self.coordinates_update_date = timezone.now()
 
-        self.save()
+        if save:
+            self.save()
 
     @property
     def coordinates(self):

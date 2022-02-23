@@ -184,21 +184,23 @@ def view_orders(request):
         existed_address.address for existed_address in existed_addresses
     ]
 
-    new_addresses = [
-        Address.objects.create(address=address)
+    addresses_to_create = [
+        Address(address=address)
         for address in set(restaurants_addresses + orders_addresses)
         if address not in not_to_create
     ]
 
-    for address in new_addresses:
+    for address in addresses_to_create:
         try:
-            address.update_coordinates()
+            address.update_coordinates(save=False)
         except ValueError:
             continue
 
+    created_addresses = Address.objects.bulk_create(addresses_to_create)
+
     context_addresses = {
         address.address: address.coordinates
-        for address in list(existed_addresses) + new_addresses
+        for address in list(existed_addresses) + list(created_addresses)
     }
 
     return render(request, template_name='order_items.html', context={
