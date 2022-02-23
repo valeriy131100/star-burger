@@ -1,9 +1,5 @@
-from itertools import groupby
-from operator import attrgetter
-
 import geopy.distance
 from django import forms
-from django.conf import settings
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -114,19 +110,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
         order_coordinates = addresses.get(order.address)
 
-        if order_coordinates is None:
-            order_address = Address.objects.create(
-                address=order.address
-            )
-            try:
-                order_address.update_coordinates()
-            except ValueError:
-                # handle null coordinates later
-                pass
-
-            order_coordinates = order_address.coordinates
-            addresses[order.address] = order_coordinates
-
         if order_coordinates == Address.NULL_COORDINATES:
             return 'Невозможный адрес заказа'
 
@@ -147,18 +130,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
         for restaurant in selected_restaurants:
             restaurant_coordinates = addresses.get(restaurant.address)
-            if not restaurant_coordinates:
-                restaurant_address = Address.objects.create(
-                    address=restaurant.address
-                )
-                try:
-                    restaurant_address.update_coordinates()
-                except ValueError:
-                    # handle null coordinates later
-                    pass
-                restaurant_coordinates = restaurant_address.coordinates
-                addresses[restaurant.address] = restaurant_coordinates
-
             if restaurant_coordinates == Address.NULL_COORDINATES:
                 formatted_restaurants.append(
                     f'{restaurant.name}: Невозможный адрес'
@@ -205,12 +176,31 @@ def view_orders(request):
     restaurants_addresses = [restaurant.address for restaurant in restaurants]
     orders_addresses = [order.address for order in unfinished_orders]
 
-    addresses = Address.objects.filter(
+    existed_addresses = Address.objects.filter(
         address__in=restaurants_addresses + orders_addresses
     )
 
+    not_to_create = [
+        existed_address.address for existed_address in existed_addresses
+    ]
+
+    addresses_to_create = [
+        Address(address=address)
+        for address in (restaurants_addresses + orders_addresses)
+        if address not in not_to_create
+    ]
+
+    created_addresses = Address.objects.bulk_create(addresses_to_create)
+
+    for address in created_addresses:
+        try:
+            address.update_coordinates()
+        except ValueError:
+            continue
+
     context_addresses = {
-        address.address: address.coordinates for address in addresses
+        address.address: address.coordinates
+        for address in list(existed_addresses) + list(created_addresses)
     }
 
     return render(request, template_name='order_items.html', context={
