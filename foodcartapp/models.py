@@ -244,8 +244,9 @@ class OrderItem(models.Model):
         related_name='orders_positions',
         verbose_name='продукт'
     )
-    quantity = models.PositiveIntegerField(
-        verbose_name='количество'
+    quantity = models.IntegerField(
+        verbose_name='количество',
+        validators=[MinValueValidator(1)]
     )
 
     class Meta:
