@@ -1,3 +1,6 @@
+from itertools import groupby
+from operator import attrgetter
+
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.db.models import Sum, F
@@ -96,6 +99,21 @@ class Product(models.Model):
         return self.name
 
 
+class RestaurantMenuItemQuerySet(models.QuerySet):
+    def group_by_restaurant(self):
+        menu_items = (self.filter(availability=True)
+                          .select_related('restaurant')
+                          .order_by('restaurant_id'))
+
+        grouped_menu_items = {
+            restaurant: list(menu_items)
+            for restaurant, menu_items in
+            groupby(menu_items, attrgetter('restaurant'))
+        }
+
+        return grouped_menu_items
+
+
 class RestaurantMenuItem(models.Model):
     restaurant = models.ForeignKey(
         Restaurant,
@@ -114,6 +132,8 @@ class RestaurantMenuItem(models.Model):
         default=True,
         db_index=True
     )
+
+    objects = RestaurantMenuItemQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'пункт меню ресторана'

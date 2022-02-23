@@ -138,7 +138,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
         selected_restaurants = []
 
-        for restaurant, menu_items in grouped_menu_items:
+        for restaurant, menu_items in grouped_menu_items.items():
             menu_products = [menu_item.product_id for menu_item in menu_items]
             if all(products_ids) in menu_products:
                 selected_restaurants.append(restaurant)
@@ -198,18 +198,9 @@ def view_orders(request):
                               .exclude(status__in=Order.FINISHED_STATUS)
                               .prefetch_related('items'))
 
-    menu_items = (RestaurantMenuItem.objects
-                                    .filter(availability=True)
-                                    .select_related('restaurant')
-                                    .order_by('restaurant_id'))
+    grouped_menu_items = RestaurantMenuItem.objects.group_by_restaurant()
 
-    grouped_menu_items = {
-        restaurant: list(menu_items)
-        for restaurant, menu_items in
-        groupby(menu_items, attrgetter('restaurant'))
-    }.items()
-
-    restaurants = list(set([menu_item.restaurant for menu_item in menu_items]))
+    restaurants = grouped_menu_items.keys()
 
     restaurants_addresses = [restaurant.address for restaurant in restaurants]
     orders_addresses = [order.address for order in unfinished_orders]
