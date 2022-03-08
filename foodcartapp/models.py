@@ -146,7 +146,7 @@ class RestaurantMenuItem(models.Model):
 
 
 class Order(models.Model):
-    FINISHED_STATUS = (
+    FINISHED_STATUSES = (
         'completed', 'rejected', 'failed'
     )
 

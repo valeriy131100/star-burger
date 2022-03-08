@@ -166,7 +166,7 @@ class OrderSerializer(serializers.ModelSerializer):
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     unfinished_orders = (Order.objects
-                              .exclude(status__in=Order.FINISHED_STATUS)
+                              .exclude(status__in=Order.FINISHED_STATUSES)
                               .prefetch_related('items'))
 
     grouped_menu_items = RestaurantMenuItem.objects.group_by_restaurant()
