@@ -146,9 +146,24 @@ class RestaurantMenuItem(models.Model):
 
 
 class Order(models.Model):
+    class Status(models.TextChoices):
+        UNPERFORMED = 'unperformed', 'Необработанный'
+        IN_WORK = 'in work', 'В работе'
+        DELIVERY = 'delivery', 'Доставляется'
+        COMPLETED = 'completed', 'Выполнен'
+        REJECTED = 'rejected', 'Отменен'
+        FAILED = 'failed', 'Завершен неудачно'
+
     FINISHED_STATUSES = (
-        'completed', 'rejected', 'failed'
+        Status.COMPLETED,
+        Status.REJECTED,
+        Status.FAILED
     )
+
+    class PayBy(models.TextChoices):
+        CASH = 'cash', 'Наличностью'
+        CARD = 'card', 'Электронно'
+        NOT_CHOSEN = 'not chosen', 'Не выбран'
 
     address = models.CharField(
         max_length=200,
@@ -176,15 +191,8 @@ class Order(models.Model):
         max_length=50,
         verbose_name='статус',
         db_index=True,
-        choices=(
-            ('unperformed', 'Необработанный'),
-            ('in work', 'В работе'),
-            ('delivery', 'Доставляется'),
-            ('completed', 'Выполнен'),
-            ('rejected', 'Отменен'),
-            ('failed', 'Завершен неудачно')
-        ),
-        default='unperformed'
+        choices=Status.choices,
+        default=Status.UNPERFORMED
     )
 
     comment = models.TextField(
@@ -216,12 +224,8 @@ class Order(models.Model):
     pay_by = models.CharField(
         max_length=50,
         verbose_name='способ оплаты',
-        choices=(
-            ('cash', 'Наличностью'),
-            ('card', 'Электронно'),
-            ('not chosen', 'Не выбран')
-        ),
-        default='not chosen',
+        choices=PayBy.choices,
+        default=PayBy.NOT_CHOSEN,
         db_index=True
     )
 
