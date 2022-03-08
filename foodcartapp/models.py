@@ -3,6 +3,7 @@ from operator import attrgetter
 
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.db.models import Sum, F
 from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -145,6 +146,13 @@ class RestaurantMenuItem(models.Model):
         return f"{self.restaurant.name} - {self.product.name}"
 
 
+class OrderQuerySet(models.QuerySet):
+    def calculate_prices(self):
+        return self.annotate(
+            price=Sum(F('items__price_at_order') * F('items__quantity'))
+        )
+
+
 class Order(models.Model):
     class Status(models.TextChoices):
         UNPERFORMED = 'unperformed', 'Необработанный'
@@ -238,22 +246,14 @@ class Order(models.Model):
         default=None
     )
 
+    objects = OrderQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'заказ'
         verbose_name_plural = 'заказы'
 
     def __str__(self):
         return f'Заказ на {self.address}'
-
-    def calculate_price(self):
-        return sum(
-            [
-                order_item.price_at_order * order_item.quantity
-                for order_item in self.items.all()
-            ]
-        )
-
-    calculate_price.short_description = 'цена'
 
 
 class OrderItem(models.Model):

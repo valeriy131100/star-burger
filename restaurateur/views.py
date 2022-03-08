@@ -98,12 +98,11 @@ def view_restaurants(request):
 class OrderSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source='get_status_display')
     pay_by = serializers.CharField(source='get_pay_by_display')
-    price = serializers.DecimalField(
-        source='calculate_price',
-        max_digits=8,
-        decimal_places=2,
-    )
+    price = serializers.SerializerMethodField()
     restaurants = serializers.SerializerMethodField()
+
+    def get_price(self, order: Order):
+        return order.price
 
     def get_restaurants(self, order: Order):
         addresses = self.context.get('addresses')
@@ -167,7 +166,8 @@ class OrderSerializer(serializers.ModelSerializer):
 def view_orders(request):
     unfinished_orders = (Order.objects
                               .exclude(status__in=Order.FINISHED_STATUSES)
-                              .prefetch_related('items'))
+                              .prefetch_related('items')
+                              .calculate_prices())
 
     grouped_menu_items = RestaurantMenuItem.objects.group_by_restaurant()
 

@@ -158,7 +158,7 @@ class OrderAdmin(admin.ModelAdmin):
         }),
         (None, {
             'fields': [
-                'calculate_price',
+                'price',
                 'pay_by',
                 'restaurant',
                 'status',
@@ -166,9 +166,17 @@ class OrderAdmin(admin.ModelAdmin):
             ]
         })
     )
-    readonly_fields = ('calculate_price',)
+
+    readonly_fields = ('price',)
 
     inlines = [OrderProductsInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).calculate_prices()
+
+    def price(self, obj):
+        return obj.price
+    price.short_description = 'цена'
 
     def full_name(self, obj):
         return f'{obj.firstname} {obj.lastname}'
