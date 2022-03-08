@@ -95,7 +95,7 @@ def register_order(request):
     order_items_fields = order_description['products']
 
     for fields in order_items_fields:
-        fields['price_at_order'] = fields['product'].price * fields['quantity']
+        fields['price_at_order'] = fields['product'].price
 
     order = Order.objects.create(
         firstname=order_description['firstname'],
