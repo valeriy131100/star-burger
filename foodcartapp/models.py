@@ -197,7 +197,6 @@ class Order(models.Model):
 
     comment = models.TextField(
         verbose_name='комментарий',
-        db_index=True,
         blank=True
     )
 
