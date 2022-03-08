@@ -235,7 +235,7 @@ class Order(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        default=True
+        default=None
     )
 
     class Meta:
