@@ -1,6 +1,3 @@
-from itertools import groupby
-from operator import itemgetter
-
 from django.db import transaction
 from django.http import JsonResponse
 from django.templatetags.static import static
@@ -93,23 +90,18 @@ def register_order(request):
     serializer = OrderSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    data = serializer.validated_data
+    order_description = serializer.validated_data
 
-    order_items_fields = data['products']
+    order_items_fields = order_description['products']
 
-    order_price = sum(
-        [
-            fields['product'].price * fields['quantity']
-            for fields in order_items_fields
-        ]
-    )
+    for fields in order_items_fields:
+        fields['price_at_order'] = fields['product'].price
 
     order = Order.objects.create(
-        firstname=data['firstname'],
-        lastname=data['lastname'],
-        phonenumber=data['phonenumber'],
-        address=data['address'],
-        price=order_price,
+        firstname=order_description['firstname'],
+        lastname=order_description['lastname'],
+        phonenumber=order_description['phonenumber'],
+        address=order_description['address']
     )
 
     OrderItem.objects.bulk_create([

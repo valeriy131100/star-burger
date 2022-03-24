@@ -122,7 +122,6 @@ class OrderAdmin(admin.ModelAdmin):
         'full_name',
         'phonenumber',
         'address',
-        'price',
         'status',
         'comment',
         'registered_at'
@@ -133,7 +132,6 @@ class OrderAdmin(admin.ModelAdmin):
         'lastname',
         'phonenumber',
         'address',
-        'price',
         'comment'
     ]
 
@@ -169,7 +167,16 @@ class OrderAdmin(admin.ModelAdmin):
         })
     )
 
+    readonly_fields = ('price',)
+
     inlines = [OrderProductsInline]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).calculate_prices()
+
+    def price(self, obj):
+        return obj.price
+    price.short_description = 'цена'
 
     def full_name(self, obj):
         return f'{obj.firstname} {obj.lastname}'

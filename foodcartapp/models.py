@@ -1,5 +1,9 @@
+from itertools import groupby
+from operator import attrgetter
+
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.db.models import Sum, F
 from django.utils import timezone
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -95,6 +99,21 @@ class Product(models.Model):
         return self.name
 
 
+class RestaurantMenuItemQuerySet(models.QuerySet):
+    def group_by_restaurant(self):
+        menu_items = (self.filter(availability=True)
+                          .select_related('restaurant')
+                          .order_by('restaurant_id'))
+
+        grouped_menu_items = {
+            restaurant: list(menu_items)
+            for restaurant, menu_items in
+            groupby(menu_items, attrgetter('restaurant'))
+        }
+
+        return grouped_menu_items
+
+
 class RestaurantMenuItem(models.Model):
     restaurant = models.ForeignKey(
         Restaurant,
@@ -114,6 +133,8 @@ class RestaurantMenuItem(models.Model):
         db_index=True
     )
 
+    objects = RestaurantMenuItemQuerySet.as_manager()
+
     class Meta:
         verbose_name = 'пункт меню ресторана'
         verbose_name_plural = 'пункты меню ресторана'
@@ -125,10 +146,32 @@ class RestaurantMenuItem(models.Model):
         return f"{self.restaurant.name} - {self.product.name}"
 
 
+class OrderQuerySet(models.QuerySet):
+    def calculate_prices(self):
+        return self.annotate(
+            price=Sum(F('items__price_at_order') * F('items__quantity'))
+        )
+
+
 class Order(models.Model):
-    FINISHED_STATUS = (
-        'completed', 'rejected', 'failed'
+    class Status(models.TextChoices):
+        UNPERFORMED = 'unperformed', 'Необработанный'
+        IN_WORK = 'in work', 'В работе'
+        DELIVERY = 'delivery', 'Доставляется'
+        COMPLETED = 'completed', 'Выполнен'
+        REJECTED = 'rejected', 'Отменен'
+        FAILED = 'failed', 'Завершен неудачно'
+
+    FINISHED_STATUSES = (
+        Status.COMPLETED,
+        Status.REJECTED,
+        Status.FAILED
     )
+
+    class PayBy(models.TextChoices):
+        CASH = 'cash', 'Наличностью'
+        CARD = 'card', 'Электронно'
+        NOT_CHOSEN = 'not chosen', 'Не выбран'
 
     address = models.CharField(
         max_length=200,
@@ -152,32 +195,16 @@ class Order(models.Model):
         db_index=True
     )
 
-    price = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        verbose_name='цена',
-        db_index=True,
-        validators=[MinValueValidator(0)]
-    )
-
     status = models.CharField(
         max_length=50,
         verbose_name='статус',
         db_index=True,
-        choices=(
-            ('unperformed', 'Необработанный'),
-            ('in work', 'В работе'),
-            ('delivery', 'Доставляется'),
-            ('completed', 'Выполнен'),
-            ('rejected', 'Отменен'),
-            ('failed', 'Завершен неудачно')
-        ),
-        default='unperformed'
+        choices=Status.choices,
+        default=Status.UNPERFORMED
     )
 
     comment = models.TextField(
         verbose_name='комментарий',
-        db_index=True,
         blank=True
     )
 
@@ -204,12 +231,8 @@ class Order(models.Model):
     pay_by = models.CharField(
         max_length=50,
         verbose_name='способ оплаты',
-        choices=(
-            ('cash', 'Наличностью'),
-            ('card', 'Электронно'),
-            ('not chose', 'Не выбран')
-        ),
-        default='not chose',
+        choices=PayBy.choices,
+        default=PayBy.NOT_CHOSEN,
         db_index=True
     )
 
@@ -220,8 +243,10 @@ class Order(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        default=True
+        default=None
     )
+
+    objects = OrderQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'заказ'
@@ -235,17 +260,24 @@ class OrderItem(models.Model):
     order = models.ForeignKey(
         Order,
         on_delete=models.CASCADE,
-        related_name='products',
+        related_name='items',
         verbose_name='заказ'
     )
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
-        related_name='orders_positions',
+        related_name='orders_items',
         verbose_name='продукт'
     )
-    quantity = models.PositiveIntegerField(
-        verbose_name='количество'
+    price_at_order = models.DecimalField(
+        'цена',
+        max_digits=8,
+        decimal_places=2,
+        validators=[MinValueValidator(0)]
+    )
+    quantity = models.IntegerField(
+        verbose_name='количество',
+        validators=[MinValueValidator(1)]
     )
 
     class Meta:

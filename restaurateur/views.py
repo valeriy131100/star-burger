@@ -1,9 +1,5 @@
-from itertools import groupby
-from operator import attrgetter
-
 import geopy.distance
 from django import forms
-from django.conf import settings
 from django.shortcuts import redirect, render
 from django.views import View
 from django.urls import reverse_lazy
@@ -102,35 +98,29 @@ def view_restaurants(request):
 class OrderSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source='get_status_display')
     pay_by = serializers.CharField(source='get_pay_by_display')
+    price = serializers.SerializerMethodField()
     restaurants = serializers.SerializerMethodField()
+
+    def get_price(self, order: Order):
+        return order.price
 
     def get_restaurants(self, order: Order):
         addresses = self.context.get('addresses')
 
         order_coordinates = addresses.get(order.address)
-        if order_coordinates is None:
-            try:
-                order_address = Address.objects.create(
-                    address=order.address
-                )
-                order_address.update_coordinates()
-            except ValueError:
-                return 'Невозможный адрес заказа'
-
-            order_coordinates = order_address.coordinates
 
         if order_coordinates == Address.NULL_COORDINATES:
-            return 'Невозможный адрес заказа'
+            return ['Невозможный адрес заказа']
 
         products_ids = [
-            order_item.product_id for order_item in order.products.all()
+            order_item.product_id for order_item in order.items.all()
         ]
 
         grouped_menu_items = self.context.get('grouped_menu_items')
 
         selected_restaurants = []
 
-        for restaurant, menu_items in grouped_menu_items:
+        for restaurant, menu_items in grouped_menu_items.items():
             menu_products = [menu_item.product_id for menu_item in menu_items]
             if all(products_ids) in menu_products:
                 selected_restaurants.append(restaurant)
@@ -139,19 +129,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
         for restaurant in selected_restaurants:
             restaurant_coordinates = addresses.get(restaurant.address)
-            if not restaurant_coordinates:
-                try:
-                    restaurant_address = Address.objects.create(
-                        address=restaurant.address
-                    )
-                    restaurant_address.update_coordinates()
-                except ValueError:
-                    formatted_restaurants.append(
-                        f'{restaurant.name}: Невозможный адрес'
-                    )
-                    continue
-                restaurant_coordinates = restaurant_address.coordinates
-
             if restaurant_coordinates == Address.NULL_COORDINATES:
                 formatted_restaurants.append(
                     f'{restaurant.name}: Невозможный адрес'
@@ -167,7 +144,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 f'{restaurant.name}: {round(restaurant_distance.km, 2)}км'
             )
 
-        return '\n'.join(formatted_restaurants)
+        return formatted_restaurants
 
     class Meta:
         model = Order
@@ -188,32 +165,42 @@ class OrderSerializer(serializers.ModelSerializer):
 @user_passes_test(is_manager, login_url='restaurateur:login')
 def view_orders(request):
     unfinished_orders = (Order.objects
-                              .exclude(status__in=Order.FINISHED_STATUS)
-                              .prefetch_related('products'))
+                              .exclude(status__in=Order.FINISHED_STATUSES)
+                              .prefetch_related('items')
+                              .calculate_prices())
 
-    menu_items = (RestaurantMenuItem.objects
-                                    .select_related('restaurant')
-                                    .order_by('restaurant_id'))
+    grouped_menu_items = RestaurantMenuItem.objects.group_by_restaurant()
 
-    grouped_menu_items = {
-        restaurant: list(menu_items)
-        for restaurant, menu_items in
-        groupby(menu_items, attrgetter('restaurant'))
-    }.items()
-
-    restaurants = list(set([menu_item.restaurant for menu_item in menu_items]))
+    restaurants = grouped_menu_items.keys()
 
     restaurants_addresses = [restaurant.address for restaurant in restaurants]
     orders_addresses = [order.address for order in unfinished_orders]
 
-    addresses = (
-        Address.objects
-               .exclude(longitude__isnull=True, latitude__isnull=True)
-               .filter(address__in=restaurants_addresses + orders_addresses)
+    existed_addresses = Address.objects.filter(
+        address__in=restaurants_addresses + orders_addresses
     )
 
+    not_to_create = [
+        existed_address.address for existed_address in existed_addresses
+    ]
+
+    addresses_to_create = [
+        Address(address=address)
+        for address in set(restaurants_addresses + orders_addresses)
+        if address not in not_to_create
+    ]
+
+    for address in addresses_to_create:
+        try:
+            address.update_coordinates(save=False)
+        except ValueError:
+            continue
+
+    created_addresses = Address.objects.bulk_create(addresses_to_create)
+
     context_addresses = {
-        address.address: address.coordinates for address in addresses
+        address.address: address.coordinates
+        for address in list(existed_addresses) + list(created_addresses)
     }
 
     return render(request, template_name='order_items.html', context={
