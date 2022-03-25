@@ -148,6 +148,32 @@ parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 - `ROLLBAR_TOKEN` - токен доступа от [Rollbar](https://rollbar.com/).
 - `ROLLBAR_ENVIRONMENT` - название окружения для [Rollbar](https://rollbar.com/).
 
+## Как быстро обновить сайт
+
+Находясь в папке проекта обновите версию кода:
+```sh
+git pull
+```
+
+Обновите библиотеки:
+```sh
+venv/bin/python -m pip install -r requirements.txt
+npm ci
+```
+
+Соберите фронтенд и статические файлы:
+```sh
+parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
+venv/bin/python manage.py collectstatic --noinput
+```
+
+Примените миграции:
+```sh
+venv/bin/python manage.py migrate --noinput
+```
+
+Не забудьте перезапустить сервисы, если вы используете их для запуска сайта.
+
 ## Цели проекта
 
 Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org). За основу был взят код проекта [FoodCart](https://github.com/Saibharath79/FoodCart).
