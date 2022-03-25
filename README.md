@@ -143,6 +143,7 @@ parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 - `DEBUG` — дебаг-режим. Поставьте `False`.
 - `SECRET_KEY` — секретный ключ проекта. Он отвечает за шифрование на сайте. Например, им зашифрованы все пароли на вашем сайте. Не стоит использовать значение по-умолчанию, **замените на своё**.
 - `ALLOWED_HOSTS` — [см. документацию Django](https://docs.djangoproject.com/en/3.1/ref/settings/#allowed-hosts)
+- `DATABASE` — строка подключения к базе данных в формате [dj-database-url](https://github.com/jacobian/dj-database-url#url-schema). Рекомендуется использовать базу данных Postgres. По умолчанию - `postgres://debug:debug@127.0.0.1:5432/starburger`.
 - `YANDEX_GEOCODER_API_KEY` - ключ API от геокодера Яндекса. Создать можно [здесь](https://developer.tech.yandex.ru/services/). Вам необходим "JavaScript API и HTTP Геокодер".
 - `ROLLBAR_TOKEN` - токен доступа от [Rollbar](https://rollbar.com/).
 - `ROLLBAR_ENVIRONMENT` - название окружения для [Rollbar](https://rollbar.com/).
