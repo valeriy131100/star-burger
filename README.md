@@ -132,6 +132,12 @@ Parcel будет следить за файлами в каталоге `bundle
 
 ## Как запустить prod-версию сайта
 
+Координаты prod-сервера:
+* Domain - [starburger.efremov.xyz](https://starburger.efremov.xyz)
+* IP - 45.132.18.71
+* User - root
+* Deploy script - /opt/deploy_star_burger.sh
+
 Собрать фронтенд:
 
 ```sh
