@@ -9,7 +9,6 @@ git pull
 echo Installing librarires
 venv/bin/python -m pip install -r requirements.txt
 npm ci
-sudo apt install libpq-dev python3-dev
 echo Building things
 parcel build bundles-src/index.js --dist-dir bundles --public-url="./"
 venv/bin/python manage.py collectstatic --noinput
