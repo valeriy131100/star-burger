@@ -88,8 +88,7 @@ MEDIA_URL = '/media/'
 
 DATABASES = {
     'default': env.dj_db_url(
-        'DATABASE',
-        default='postgres://debug:debug@127.0.0.1:5432/starburger'
+        'DATABASE'
     )
 }
 
