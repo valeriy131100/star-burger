@@ -1,0 +1,66 @@
+version: '3'
+services:
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB-debug}
+      POSTGRES_USER: ${POSTGRES_USER-debug}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD-OwOtBep9Frut}
+    expose:
+      - 5432
+    networks:
+      - int_network
+  frontend:
+    build: frontend
+    image: starburger-front
+    volumes:
+      - parcel_data:/code/bundles
+  backend:
+    container_name: backend
+    build: backend
+    image: starburger-debug
+    volumes:
+      - media:/code/media
+      - parcel_data:/code/bundles
+      - app_static:/code/staticfiles
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG}
+      DATABASE: ${DATABASE-postgres://debug:OwOtBep9Frut@db:5432/debug}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      YANDEX_GEOCODER_API_KEY: ${YANDEX_GEOCODER_API_KEY}
+      ROLLBAR_TOKEN: ${ROLLBAR_TOKEN}
+      ROLLBAR_ENVIRONMENT: ${ROLLBAR_ENVIRONMENT-production}
+    command: sh -c "python manage.py collectstatic --noinput &&
+                    gunicorn star_burger.wsgi:application --bind 0.0.0.0:8000"
+    depends_on:
+      - frontend
+      - db
+    expose:
+      - 8000
+    networks:
+      - int_network
+  nginx:
+    image: nginx:1.15-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - int_network
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - media:/opt/media
+      - app_static:/opt/staticfiles
+    depends_on:
+      - backend
+      - frontend
+volumes:
+  parcel_data:
+  db_data:
+  app_static:
+  media:
+networks:
+  int_network:
+    driver: bridge
