@@ -1,0 +1,43 @@
+version: "3"
+
+services:
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB-debug}
+      POSTGRES_USER: ${POSTGRES_USER-debug}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD-OwOtBep9Frut}
+
+  frontend:
+    build: frontend
+    image: starburger-front
+    volumes:
+      - parcel_data:/code/bundles
+
+  backend:
+    build: backend
+    image: starburger-debug
+    volumes:
+      - ./backend/media:/code/media
+      - parcel_data:/code/bundles
+    environment:
+      SECRET_KEY: ${SECRET_KEY-REPLACE_ME}
+      DEBUG: ${DEBUG-TRUE}
+      DATABASE: ${DATABASE-postgres://debug:OwOtBep9Frut@db:5432/debug}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS-127.0.0.1,localhost}
+      YANDEX_GEOCODER_API_KEY: ${YANDEX_GEOCODER_API_KEY}
+      ROLLBAR_TOKEN: ${ROLLBAR_TOKEN}
+      ROLLBAR_ENVIRONMENT: ${ROLLBAR_ENVIRONMENT-debug}
+    command: sh -c "python manage.py collectstatic --noinput &&
+                    python manage.py runserver 0.0.0.0:8000"
+    ports:
+      - 127.0.0.1:8080:8000
+    depends_on:
+      - db
+      - frontend
+
+volumes:
+  db_data:
+  parcel_data:
