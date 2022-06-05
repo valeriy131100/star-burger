@@ -5,9 +5,9 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${POSTGRES_DB-debug}
-      POSTGRES_USER: ${POSTGRES_USER-debug}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD-OwOtBep9Frut}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     expose:
       - 5432
     networks:
@@ -32,7 +32,7 @@ services:
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DEBUG: ${DEBUG}
-      DATABASE: ${DATABASE-postgres://debug:OwOtBep9Frut@db:5432/debug}
+      DATABASE: ${DATABASE}
       ALLOWED_HOSTS: ${ALLOWED_HOSTS}
       YANDEX_GEOCODER_API_KEY: ${YANDEX_GEOCODER_API_KEY}
       ROLLBAR_TOKEN: ${ROLLBAR_TOKEN}
