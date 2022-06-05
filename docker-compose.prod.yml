@@ -46,8 +46,6 @@ services:
       - 8000
     networks:
       - int_network
-    restart:
-      always
   nginx:
     image: nginx:1.15-alpine
     ports:
