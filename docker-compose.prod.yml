@@ -12,11 +12,15 @@ services:
       - 5432
     networks:
       - int_network
+    restart:
+      always
   frontend:
     build: frontend
     image: starburger-front
     volumes:
       - parcel_data:/code/bundles
+    restart:
+      always
   backend:
     container_name: backend
     build: backend
@@ -42,6 +46,8 @@ services:
       - 8000
     networks:
       - int_network
+    restart:
+      always
   nginx:
     image: nginx:1.15-alpine
     ports:
@@ -59,6 +65,8 @@ services:
     depends_on:
       - backend
       - frontend
+    restart:
+      always
   certbot:
     image: certbot/certbot
     container_name: certbot
