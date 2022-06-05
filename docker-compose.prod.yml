@@ -53,6 +53,7 @@ services:
       - ./nginx:/etc/nginx/conf.d
       - media:/opt/media
       - app_static:/opt/staticfiles
+      - /etc/letsencrypt:/etc/letsencrypt
       - /var/lib/letsencrypt:/var/lib/letsencrypt
       - /var/www/html:/var/www/html
     depends_on:
