@@ -53,17 +53,35 @@ services:
       - ./nginx:/etc/nginx/conf.d
       - media:/opt/media
       - app_static:/opt/staticfiles
-      - /etc/letsencrypt:/etc/letsencrypt
-      - /var/lib/letsencrypt:/var/lib/letsencrypt
-      - /var/www/html:/var/www/html
+      - web-root:/var/www/html
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
     depends_on:
       - backend
       - frontend
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - web-root:/var/www/html
+    depends_on:
+      - webserver
+    command: certonly --webroot --webroot-path=/var/www/html --email valeriy131100@gmail.com --agree-tos --no-eff-email --staging -d starburger.efremov.xyz
 volumes:
   parcel_data:
   db_data:
   app_static:
   media:
+  certbot-etc:
+  certbot-var:
+  web-root:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/www/html
+      o: bind
 networks:
   int_network:
     driver: bridge
