@@ -75,7 +75,17 @@ volumes:
   app_static:
   media:
   certbot-etc:
+    driver: local
+    driver_opts:
+      type: none
+      device: /etc/letsencrypt
+      o: bind
   certbot-var:
+    driver: local
+    driver_opts:
+      type: none
+      device: /var/lib/letsencrypt
+      o: bind
   web-root:
     driver: local
     driver_opts:
