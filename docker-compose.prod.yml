@@ -22,7 +22,7 @@ services:
   backend:
     container_name: backend
     build: backend
-    image: starburger-debug
+    image: starburger-back
     volumes:
       - media:/code/media
       - parcel_data:/code/bundles
